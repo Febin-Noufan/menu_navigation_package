@@ -1,5 +1,5 @@
 
 
-library dynamic_menu;
+library;
 
 export 'src/dynamic_menu.dart';

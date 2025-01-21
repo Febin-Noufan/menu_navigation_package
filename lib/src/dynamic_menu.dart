@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,7 +15,7 @@ class MenuItem {
   final String label;
   final List<MenuSection>? subMenu;
   final VoidCallback? onTap;
-  final Widget Function()? navigateTo; // New property for navigation
+  final Widget Function()? navigateTo;
 
   MenuItem({
     required this.shortcut,
@@ -43,38 +45,55 @@ class CustomButton extends StatelessWidget {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        side: BorderSide(color: isSelected ? Colors.teal : Colors.black),
-        backgroundColor: isSelected ? Colors.teal.withOpacity(0.1) : null,
+        side: BorderSide(
+          // width: 1,
+          color: isSelected
+              ? const Color.fromARGB(255, 79, 78, 78)
+              : const Color.fromARGB(255, 70, 69, 69),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(12), // Adjust this value as needed
+        ),
+        backgroundColor: isSelected
+            ? const Color(0xFF9E9E9E).withOpacity(0.1)
+            : const Color(0xFFE0E0E0),
       ),
       onPressed: onPressed,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.teal : Colors.red,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              shortcut,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+      child: SizedBox(
+        height: 40,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color.fromARGB(255, 243, 9, 9)
+                    : const Color.fromARGB(255, 236, 5, 5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                shortcut,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.teal : Colors.black,
-              fontSize: 14,
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF616161) : Colors.black,
+                fontSize: 14,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -103,6 +122,9 @@ class _DynamicMenuState extends State<DynamicMenu> {
   int _selectedSectionIndex = 0;
   int _selectedItemIndex = -1;
 
+  Timer? _escKeyTimer;
+  bool _isFirstEscPress = false;
+
   @override
   void initState() {
     super.initState();
@@ -113,7 +135,11 @@ class _DynamicMenuState extends State<DynamicMenu> {
     if (menuItem.navigateTo != null) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => menuItem.navigateTo!()),
+        MaterialPageRoute(
+          builder: (context) => EscListenerPage(
+            child: menuItem.navigateTo!(),
+          ),
+        ),
       );
     } else if (menuItem.subMenu != null && menuItem.subMenu!.isNotEmpty) {
       setState(() {
@@ -157,7 +183,9 @@ class _DynamicMenuState extends State<DynamicMenu> {
       } else if (key == 'ENTER' && _selectedItemIndex != -1) {
         _navigateToSubMenu(
             _currentMenu[_selectedSectionIndex].items[_selectedItemIndex]);
-      } else if (key == 'ESCAPE' || key == 'BACKSPACE') {
+      } else if (key == 'ESCAPE') {
+        _handleEscKey();
+      } else if (key == 'BACKSPACE') {
         if (_menuStack.isNotEmpty) {
           _navigateBack();
         }
@@ -174,6 +202,24 @@ class _DynamicMenuState extends State<DynamicMenu> {
     }
   }
 
+  void _handleEscKey() {
+    if (_isFirstEscPress) {
+      setState(() {
+        _currentMenu = widget.menuData;
+        _menuStack.clear();
+        _selectedSectionIndex = 0;
+        _selectedItemIndex = -1;
+      });
+      _isFirstEscPress = false;
+      _escKeyTimer?.cancel();
+    } else {
+      _isFirstEscPress = true;
+      _escKeyTimer = Timer(const Duration(milliseconds: 300), () {
+        _isFirstEscPress = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
@@ -181,28 +227,31 @@ class _DynamicMenuState extends State<DynamicMenu> {
       autofocus: true,
       onKey: _handleKeyEvent,
       child: Container(
-        color: Colors.grey.shade200,
+        color: const Color(0xFFE0E0E0), // Light grey background
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               height: 50,
-              color: Colors.teal,
+              color: const Color(0xFFBDBDBD), // Grey header
               alignment: Alignment.center,
               child: Text(
                 widget.title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               ),
             ),
             if (_menuStack.isNotEmpty)
               TextButton.icon(
                 onPressed: _navigateBack,
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Back'),
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF616161)),
+                label: const Text(
+                  'Back',
+                  style: TextStyle(color: Color(0xFF616161)),
+                ),
               ),
             Expanded(
               child: SingleChildScrollView(
@@ -214,13 +263,15 @@ class _DynamicMenuState extends State<DynamicMenu> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 8.0, horizontal: 16.0),
+                            vertical: 8.0,
+                            horizontal: 16.0,
+                          ),
                           child: Text(
                             section.title,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: Colors.teal,
+                              color: Colors.black, // Black text
                             ),
                           ),
                         ),
@@ -229,10 +280,10 @@ class _DynamicMenuState extends State<DynamicMenu> {
                           child: Wrap(
                             spacing: 12,
                             runSpacing: 12,
-                            children: section.items.asMap().entries.map((entry) {
+                            children:
+                                section.items.asMap().entries.map((entry) {
                               final itemIndex = entry.key;
                               final item = entry.value;
-
                               return CustomButton(
                                 shortcut: item.shortcut,
                                 label: item.label,
@@ -259,7 +310,57 @@ class _DynamicMenuState extends State<DynamicMenu> {
 
   @override
   void dispose() {
+    _escKeyTimer?.cancel();
     _focusNode.dispose();
+    super.dispose();
+  }
+}
+
+class EscListenerPage extends StatefulWidget {
+  final Widget child;
+
+  const EscListenerPage({super.key, required this.child});
+
+  @override
+  State<EscListenerPage> createState() => _EscListenerPageState();
+}
+
+class _EscListenerPageState extends State<EscListenerPage> {
+  Timer? _escKeyTimer;
+  bool _isFirstEscPress = false;
+
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      final key = event.logicalKey.keyLabel.toUpperCase();
+
+      if (key == 'ESCAPE') {
+        if (_isFirstEscPress) {
+          Navigator.pop(context); // Perform Navigator.pop() on double Esc
+          _isFirstEscPress = false;
+          _escKeyTimer?.cancel();
+        } else {
+          _isFirstEscPress = true;
+          _escKeyTimer = Timer(const Duration(milliseconds: 300), () {
+            _isFirstEscPress = false; // Reset after 300ms
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RawKeyboardListener(
+      focusNode: FocusNode(),
+      autofocus: true,
+      onKey: _handleKeyEvent,
+      child: widget.child,
+    );
+  }
+
+  @override
+  void dispose() {
+    _escKeyTimer?.cancel();
     super.dispose();
   }
 }
