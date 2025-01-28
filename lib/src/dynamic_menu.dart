@@ -137,6 +137,7 @@ class _DynamicMenuState extends State<DynamicMenu> {
         context,
         MaterialPageRoute(
           builder: (context) => EscListenerPage(
+            allowRootNavigation: true,
             child: menuItem.navigateTo!(),
           ),
         ),
@@ -166,7 +167,9 @@ class _DynamicMenuState extends State<DynamicMenu> {
     }
   }
 
+  // ignore: deprecated_member_use
   void _handleKeyEvent(RawKeyEvent event) {
+    // ignore: deprecated_member_use
     if (event is RawKeyDownEvent) {
       final key = event.logicalKey.keyLabel.toUpperCase();
 
@@ -318,8 +321,15 @@ class _DynamicMenuState extends State<DynamicMenu> {
 
 class EscListenerPage extends StatefulWidget {
   final Widget child;
+  final bool allowRootNavigation;
+  final VoidCallback? onEscapeRoot;
 
-  const EscListenerPage({super.key, required this.child});
+  const EscListenerPage({
+    super.key,
+    required this.child,
+    this.allowRootNavigation = false,
+    this.onEscapeRoot,
+  });
 
   @override
   State<EscListenerPage> createState() => _EscListenerPageState();
@@ -335,13 +345,21 @@ class _EscListenerPageState extends State<EscListenerPage> {
 
       if (key == 'ESCAPE') {
         if (_isFirstEscPress) {
-          Navigator.pop(context); // Perform Navigator.pop() on double Esc
+          if (Navigator.of(context).canPop()) {
+            Navigator.pop(context);
+          } else if (widget.allowRootNavigation) {
+            if (widget.onEscapeRoot != null) {
+              widget.onEscapeRoot!();
+            } else {
+              Navigator.of(context, rootNavigator: true).pop();
+            }
+          }
           _isFirstEscPress = false;
           _escKeyTimer?.cancel();
         } else {
           _isFirstEscPress = true;
           _escKeyTimer = Timer(const Duration(milliseconds: 300), () {
-            _isFirstEscPress = false; // Reset after 300ms
+            _isFirstEscPress = false;
           });
         }
       }
