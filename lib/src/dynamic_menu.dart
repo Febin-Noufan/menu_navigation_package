@@ -187,7 +187,10 @@ class _DynamicMenuState extends State<DynamicMenu> {
         _navigateToSubMenu(
             _currentMenu[_selectedSectionIndex].items[_selectedItemIndex]);
       } else if (key == 'ESCAPE') {
-        _handleEscKey();
+        if (_menuStack.isNotEmpty) {
+          _navigateBack();
+        }
+        // _handleEscKey();
       } else if (key == 'BACKSPACE') {
         if (_menuStack.isNotEmpty) {
           _navigateBack();
