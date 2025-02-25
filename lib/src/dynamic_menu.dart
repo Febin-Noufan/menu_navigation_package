@@ -103,12 +103,15 @@ class DynamicMenu extends StatefulWidget {
   final List<MenuSection> menuData;
   final Function(MenuItem) onMenuItemSelected;
   final String title;
+    final Map<LogicalKeyboardKey, VoidCallback> shortcuts;
 
   const DynamicMenu({
     super.key,
     required this.menuData,
     required this.onMenuItemSelected,
     required this.title,
+     this.shortcuts =
+        const {},
   });
 
   @override
@@ -179,7 +182,7 @@ class _DynamicMenuState extends State<DynamicMenu> {
               .clamp(-1, _currentMenu[_selectedSectionIndex].items.length - 1);
         });
       } else if (key == 'ARROW_DOWN') {
-        setState(() {
+        setState(() { 
           _selectedItemIndex = (_selectedItemIndex + 1) %
               _currentMenu[_selectedSectionIndex].items.length;
         });
@@ -203,6 +206,15 @@ class _DynamicMenuState extends State<DynamicMenu> {
               return;
             }
           }
+        }
+      }
+         // Handle custom shortcuts
+      for (final entry in widget.shortcuts.entries) {
+        final key = entry.key;
+        final callback = entry.value;
+
+        if (event.logicalKey == key) {
+          callback(); // Invoke the callback for the matching shortcut
         }
       }
     }
