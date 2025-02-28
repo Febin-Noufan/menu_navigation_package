@@ -31,6 +31,15 @@ class CustomButton extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color selectedBackgroundColor;
+  final Color borderColor;
+  final Color selectedBorderColor;
+  final Color shortcutBackgroundColor;
+  final Color selectedShortcutBackgroundColor;
+  final Color shortcutTextColor;
+  final Color textColor;
+  final Color selectedTextColor;
 
   const CustomButton({
     super.key,
@@ -38,6 +47,15 @@ class CustomButton extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onPressed,
+    this.backgroundColor = const Color(0xFFE0E0E0),
+    this.selectedBackgroundColor = const Color(0xFF9E9E9E),
+    this.borderColor = const Color.fromARGB(255, 70, 69, 69),
+    this.selectedBorderColor = const Color.fromARGB(255, 79, 78, 78),
+    this.shortcutBackgroundColor = const Color.fromARGB(255, 236, 5, 5),
+    this.selectedShortcutBackgroundColor = const Color.fromARGB(255, 243, 9, 9),
+    this.shortcutTextColor = Colors.white,
+    this.textColor = Colors.black,
+    this.selectedTextColor = const Color(0xFF616161),
   });
 
   @override
@@ -46,18 +64,12 @@ class CustomButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         side: BorderSide(
-          // width: 1,
-          color: isSelected
-              ? const Color.fromARGB(255, 79, 78, 78)
-              : const Color.fromARGB(255, 70, 69, 69),
+          color: isSelected ? selectedBorderColor : borderColor,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(12), // Adjust this value as needed
+          borderRadius: BorderRadius.circular(12),
         ),
-        backgroundColor: isSelected
-            ? const Color(0xFF9E9E9E).withOpacity(0.1)
-            : const Color(0xFFE0E0E0),
+        backgroundColor: isSelected ? selectedBackgroundColor.withOpacity(0.1) : backgroundColor,
       ),
       onPressed: onPressed,
       child: SizedBox(
@@ -69,16 +81,14 @@ class CustomButton extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color.fromARGB(255, 243, 9, 9)
-                    : const Color.fromARGB(255, 236, 5, 5),
+                color: isSelected ? selectedShortcutBackgroundColor : shortcutBackgroundColor,
                 borderRadius: BorderRadius.circular(4),
               ),
               alignment: Alignment.center,
               child: Text(
                 shortcut,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: shortcutTextColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -88,7 +98,7 @@ class CustomButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF616161) : Colors.black,
+                color: isSelected ? selectedTextColor : textColor,
                 fontSize: 14,
               ),
             ),
@@ -103,15 +113,46 @@ class DynamicMenu extends StatefulWidget {
   final List<MenuSection> menuData;
   final Function(MenuItem) onMenuItemSelected;
   final String title;
-    final Map<LogicalKeyboardKey, VoidCallback> shortcuts;
+  final Map<LogicalKeyboardKey, VoidCallback> shortcuts;
+  final bool showAppBar;
+  final Color backgroundColor;
+  final Color appBarColor;
+  final Color appBarTextColor;
+  final Color sectionTitleColor;
+  final Color backButtonColor;
+  final Color backButtonTextColor;
+  final Color buttonBackgroundColor;
+  final Color buttonSelectedBackgroundColor;
+  final Color buttonBorderColor;
+  final Color buttonSelectedBorderColor;
+  final Color shortcutBackgroundColor;
+  final Color shortcutSelectedBackgroundColor;
+  final Color shortcutTextColor;
+  final Color buttonTextColor;
+  final Color buttonSelectedTextColor;
 
   const DynamicMenu({
     super.key,
     required this.menuData,
     required this.onMenuItemSelected,
     required this.title,
-     this.shortcuts =
-        const {},
+    this.shortcuts = const {},
+    this.showAppBar = true,
+    this.backgroundColor = const Color(0xFFE0E0E0),
+    this.appBarColor = const Color(0xFFBDBDBD),
+    this.appBarTextColor = Colors.black,
+    this.sectionTitleColor = Colors.black,
+    this.backButtonColor = const Color(0xFF616161),
+    this.backButtonTextColor = const Color(0xFF616161),
+    this.buttonBackgroundColor = const Color(0xFFE0E0E0),
+    this.buttonSelectedBackgroundColor = const Color(0xFF9E9E9E),
+    this.buttonBorderColor = const Color.fromARGB(255, 70, 69, 69),
+    this.buttonSelectedBorderColor = const Color.fromARGB(255, 79, 78, 78),
+    this.shortcutBackgroundColor = const Color.fromARGB(255, 236, 5, 5),
+    this.shortcutSelectedBackgroundColor = const Color.fromARGB(255, 243, 9, 9),
+    this.shortcutTextColor = Colors.white,
+    this.buttonTextColor = Colors.black,
+    this.buttonSelectedTextColor = const Color(0xFF616161),
   });
 
   @override
@@ -182,7 +223,7 @@ class _DynamicMenuState extends State<DynamicMenu> {
               .clamp(-1, _currentMenu[_selectedSectionIndex].items.length - 1);
         });
       } else if (key == 'ARROW_DOWN') {
-        setState(() { 
+        setState(() {
           _selectedItemIndex = (_selectedItemIndex + 1) %
               _currentMenu[_selectedSectionIndex].items.length;
         });
@@ -193,7 +234,6 @@ class _DynamicMenuState extends State<DynamicMenu> {
         if (_menuStack.isNotEmpty) {
           _navigateBack();
         }
-        // _handleEscKey();
       } else if (key == 'BACKSPACE') {
         if (_menuStack.isNotEmpty) {
           _navigateBack();
@@ -208,7 +248,7 @@ class _DynamicMenuState extends State<DynamicMenu> {
           }
         }
       }
-         // Handle custom shortcuts
+      // Handle custom shortcuts
       for (final entry in widget.shortcuts.entries) {
         final key = entry.key;
         final callback = entry.value;
@@ -220,24 +260,6 @@ class _DynamicMenuState extends State<DynamicMenu> {
     }
   }
 
-  void _handleEscKey() {
-    if (_isFirstEscPress) {
-      setState(() {
-        _currentMenu = widget.menuData;
-        _menuStack.clear();
-        _selectedSectionIndex = 0;
-        _selectedItemIndex = -1;
-      });
-      _isFirstEscPress = false;
-      _escKeyTimer?.cancel();
-    } else {
-      _isFirstEscPress = true;
-      _escKeyTimer = Timer(const Duration(milliseconds: 300), () {
-        _isFirstEscPress = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
@@ -245,30 +267,31 @@ class _DynamicMenuState extends State<DynamicMenu> {
       autofocus: true,
       onKey: _handleKeyEvent,
       child: Container(
-        color: const Color(0xFFE0E0E0), // Light grey background
+        color: widget.backgroundColor, 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              height: 50,
-              color: const Color(0xFFBDBDBD), // Grey header
-              alignment: Alignment.center,
-              child: Text(
-                widget.title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.black,
+            if (widget.showAppBar)
+              Container(
+                height: 50,
+                color: widget.appBarColor,
+                alignment: Alignment.center,
+                child: Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: widget.appBarTextColor,
+                  ),
                 ),
               ),
-            ),
             if (_menuStack.isNotEmpty)
               TextButton.icon(
                 onPressed: _navigateBack,
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF616161)),
-                label: const Text(
+                icon: Icon(Icons.arrow_back, color: widget.backButtonColor),
+                label: Text(
                   'Back',
-                  style: TextStyle(color: Color(0xFF616161)),
+                  style: TextStyle(color: widget.backButtonTextColor),
                 ),
               ),
             Expanded(
@@ -286,10 +309,10 @@ class _DynamicMenuState extends State<DynamicMenu> {
                           ),
                           child: Text(
                             section.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: Colors.black, // Black text
+                              color: widget.sectionTitleColor,
                             ),
                           ),
                         ),
@@ -309,6 +332,15 @@ class _DynamicMenuState extends State<DynamicMenu> {
                                         _currentMenu.indexOf(section) &&
                                     itemIndex == _selectedItemIndex,
                                 onPressed: () => _navigateToSubMenu(item),
+                                backgroundColor: widget.buttonBackgroundColor,
+                                selectedBackgroundColor: widget.buttonSelectedBackgroundColor,
+                                borderColor: widget.buttonBorderColor,
+                                selectedBorderColor: widget.buttonSelectedBorderColor,
+                                shortcutBackgroundColor: widget.shortcutBackgroundColor,
+                                selectedShortcutBackgroundColor: widget.shortcutSelectedBackgroundColor,
+                                shortcutTextColor: widget.shortcutTextColor,
+                                textColor: widget.buttonTextColor,
+                                selectedTextColor: widget.buttonSelectedTextColor,
                               );
                             }).toList(),
                           ),
