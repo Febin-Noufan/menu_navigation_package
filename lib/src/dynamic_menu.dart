@@ -2,6 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'overflow_aware_text.dart';
+import 'snackbar_manager.dart';
 
 class MenuSection {
   final String title;
@@ -26,83 +30,194 @@ class MenuItem {
   });
 }
 
-class CustomButton extends StatelessWidget {
+class CustomChip extends StatefulWidget {
   final String shortcut;
   final String label;
   final bool isSelected;
   final VoidCallback onPressed;
-  final Color backgroundColor;
-  final Color selectedBackgroundColor;
-  final Color borderColor;
-  final Color selectedBorderColor;
-  final Color shortcutBackgroundColor;
-  final Color selectedShortcutBackgroundColor;
-  final Color shortcutTextColor;
-  final Color textColor;
-  final Color selectedTextColor;
+  final Color? backgroundColor;
+  final Color? selectedBackgroundColor;
+  final Color? borderColor;
+  final Color? selectedBorderColor;
+  final Color? shortcutBackgroundColor;
+  final Color? selectedShortcutBackgroundColor;
+  final Color? shortcutTextColor;
+  final Color? textColor;
+  final Color? selectedTextColor;
+  final double elevation;
+  final bool forceHoverShadow;
 
-  const CustomButton({
+  const CustomChip({
     super.key,
     required this.shortcut,
     required this.label,
     required this.isSelected,
     required this.onPressed,
-    this.backgroundColor = const Color(0xFFE0E0E0),
-    this.selectedBackgroundColor = const Color(0xFF9E9E9E),
-    this.borderColor = const Color.fromARGB(255, 70, 69, 69),
-    this.selectedBorderColor = const Color.fromARGB(255, 79, 78, 78),
-    this.shortcutBackgroundColor = const Color.fromARGB(255, 236, 5, 5),
-    this.selectedShortcutBackgroundColor = const Color.fromARGB(255, 243, 9, 9),
-    this.shortcutTextColor = Colors.white,
-    this.textColor = Colors.black,
-    this.selectedTextColor = const Color(0xFF616161),
+    this.backgroundColor,
+    this.selectedBackgroundColor,
+    this.borderColor,
+    this.selectedBorderColor,
+    this.shortcutBackgroundColor,
+    this.selectedShortcutBackgroundColor,
+    this.shortcutTextColor,
+    this.textColor,
+    this.selectedTextColor,
+    this.elevation = 4.0,
+    this.forceHoverShadow = false,
   });
 
   @override
+  State<CustomChip> createState() => _CustomChipState();
+}
+
+class _CustomChipState extends State<CustomChip> {
+  bool _isHovering = false;
+
+  @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        side: BorderSide(
-          color: isSelected ? selectedBorderColor : borderColor,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: isSelected ? selectedBackgroundColor.withOpacity(0.1) : backgroundColor,
+    final chipTheme = ChipTheme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final defaultLabelColor =
+        chipTheme.labelStyle?.color ?? colorScheme.onSurface;
+    final defaultSelectedLabelColor = colorScheme.primary;
+
+    final lblColor = widget.isSelected
+        ? (widget.selectedTextColor ?? defaultSelectedLabelColor)
+        : (widget.textColor ?? defaultLabelColor);
+
+    final baseBackgroundColor = widget.isSelected
+        ? (widget.selectedBackgroundColor ?? Colors.blue.shade100)
+        : (widget.backgroundColor ?? Colors.white);
+
+    final hoverBackgroundColor = Theme.of(context).primaryColor;
+    final currentBackgroundColor =
+        _isHovering ? hoverBackgroundColor : baseBackgroundColor;
+
+    final baseShadowColor = Colors.grey.shade400;
+    final hoverShadowColor = Colors.black.withOpacity(0.5);
+
+    final baseBoxShadow = [
+      BoxShadow(
+        color: baseShadowColor,
+        offset: const Offset(6.0, 6.0),
+        blurRadius: 15.0,
+        spreadRadius: 1.0,
       ),
-      onPressed: onPressed,
-      child: SizedBox(
-        height: 40,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: isSelected ? selectedShortcutBackgroundColor : shortcutBackgroundColor,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                shortcut,
-                style: TextStyle(
-                  color: shortcutTextColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+      BoxShadow(
+        color: widget.forceHoverShadow
+            ? Colors.grey.withOpacity(.1)
+            : Colors.white.withOpacity(0.9),
+        offset: const Offset(-6.0, -6.0),
+        blurRadius: 15.0,
+        spreadRadius: 1.0,
+      ),
+    ];
+
+    final hoverBoxShadow = [
+      BoxShadow(
+        color: hoverShadowColor,
+        offset: const Offset(6.0, 6.0),
+        blurRadius: 15.0,
+        spreadRadius: 1.0,
+      ),
+      BoxShadow(
+        color: Colors.grey.withOpacity(0.1),
+        offset: const Offset(-6.0, -6.0),
+        blurRadius: 15.0,
+        spreadRadius: 1.0,
+      ),
+    ];
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: AnimatedContainer(
+        curve: Curves.fastLinearToSlowEaseIn,
+        duration: const Duration(milliseconds: 400),
+        decoration: BoxDecoration(
+          color: currentBackgroundColor,
+          borderRadius: BorderRadius.circular(40),
+          boxShadow: _isHovering ? hoverBoxShadow : baseBoxShadow,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(50),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6)
+                  .copyWith(right: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    width: 46.0,
+                    height: 46.0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.fastEaseInToSlowEaseOut,
+                    decoration: BoxDecoration(
+                      color: _isHovering
+                          ? Colors.white
+                          : (widget.shortcutBackgroundColor ??
+                              const Color(0xFF4A6CEE)),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isHovering
+                              ? hoverShadowColor
+                              : Colors.grey.shade100,
+                          offset: const Offset(-4, -4),
+                          blurRadius: 8,
+                        ),
+                        BoxShadow(
+                          color: _isHovering
+                              ? hoverShadowColor
+                              : Colors.black.withOpacity(.3),
+                          offset: const Offset(4, 4),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.shortcut,
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: _isHovering
+                                ? Theme.of(context).primaryColor
+                                : (widget.shortcutTextColor ?? Colors.white),
+                            fontWeight: FontWeight.w600,
+                            fontFamily: GoogleFonts.poppins().fontFamily),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: _isHovering ? Colors.white : lblColor,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: GoogleFonts.poppins().fontFamily),
+                    ).withOverflowTooltip(
+                      waitDuration: const Duration(milliseconds: 500),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      tooltipTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? selectedTextColor : textColor,
-                fontSize: 14,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -115,21 +230,22 @@ class DynamicMenu extends StatefulWidget {
   final String title;
   final Map<LogicalKeyboardKey, VoidCallback> shortcuts;
   final bool showAppBar;
-  final Color backgroundColor;
-  final Color appBarColor;
-  final Color appBarTextColor;
-  final Color sectionTitleColor;
-  final Color backButtonColor;
-  final Color backButtonTextColor;
-  final Color buttonBackgroundColor;
-  final Color buttonSelectedBackgroundColor;
-  final Color buttonBorderColor;
-  final Color buttonSelectedBorderColor;
-  final Color shortcutBackgroundColor;
-  final Color shortcutSelectedBackgroundColor;
-  final Color shortcutTextColor;
-  final Color buttonTextColor;
-  final Color buttonSelectedTextColor;
+
+  final Color? backgroundColor;
+  final Color? appBarColor;
+  final Color? appBarTextColor;
+  final Color? sectionTitleColor;
+  final Color? backButtonColor;
+  final Color? backButtonTextColor;
+  final Color? buttonBackgroundColor;
+  final Color? buttonSelectedBackgroundColor;
+  final Color? buttonBorderColor;
+  final Color? buttonSelectedBorderColor;
+  final Color? shortcutBackgroundColor;
+  final Color? shortcutSelectedBackgroundColor;
+  final Color? shortcutTextColor;
+  final Color? buttonTextColor;
+  final Color? buttonSelectedTextColor;
 
   const DynamicMenu({
     super.key,
@@ -138,21 +254,21 @@ class DynamicMenu extends StatefulWidget {
     required this.title,
     this.shortcuts = const {},
     this.showAppBar = true,
-    this.backgroundColor = const Color(0xFFE0E0E0),
-    this.appBarColor = const Color(0xFFBDBDBD),
-    this.appBarTextColor = Colors.black,
-    this.sectionTitleColor = Colors.black,
-    this.backButtonColor = const Color(0xFF616161),
-    this.backButtonTextColor = const Color(0xFF616161),
-    this.buttonBackgroundColor = const Color(0xFFE0E0E0),
-    this.buttonSelectedBackgroundColor = const Color(0xFF9E9E9E),
-    this.buttonBorderColor = const Color.fromARGB(255, 70, 69, 69),
-    this.buttonSelectedBorderColor = const Color.fromARGB(255, 79, 78, 78),
-    this.shortcutBackgroundColor = const Color.fromARGB(255, 236, 5, 5),
-    this.shortcutSelectedBackgroundColor = const Color.fromARGB(255, 243, 9, 9),
-    this.shortcutTextColor = Colors.white,
-    this.buttonTextColor = Colors.black,
-    this.buttonSelectedTextColor = const Color(0xFF616161),
+    this.backgroundColor,
+    this.appBarColor,
+    this.appBarTextColor,
+    this.sectionTitleColor,
+    this.backButtonColor,
+    this.backButtonTextColor,
+    this.buttonBackgroundColor,
+    this.buttonSelectedBackgroundColor,
+    this.buttonBorderColor,
+    this.buttonSelectedBorderColor,
+    this.shortcutBackgroundColor,
+    this.shortcutSelectedBackgroundColor,
+    this.shortcutTextColor,
+    this.buttonTextColor,
+    this.buttonSelectedTextColor,
   });
 
   @override
@@ -166,38 +282,37 @@ class _DynamicMenuState extends State<DynamicMenu> {
   int _selectedSectionIndex = 0;
   int _selectedItemIndex = -1;
 
-  Timer? _escKeyTimer;
-  bool _isFirstEscPress = false;
-
   @override
   void initState() {
     super.initState();
     _currentMenu = widget.menuData;
   }
 
-  void _navigateToSubMenu(MenuItem menuItem) {
-    if (menuItem.navigateTo != null) {
+  void _navigateToSubMenu(MenuItem item) {
+    if (item.navigateTo != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EscListenerPage(
-            allowRootNavigation: true,
-            child: menuItem.navigateTo!(),
-          ),
-        ),
+            builder: (_) => EscListenerPage(
+                allowRootNavigation: true, child: item.navigateTo!())),
       );
-    } else if (menuItem.subMenu != null && menuItem.subMenu!.isNotEmpty) {
+    } else if (item.subMenu != null && item.subMenu!.isNotEmpty) {
       setState(() {
         _menuStack.add(_currentMenu);
-        _currentMenu = menuItem.subMenu!;
+        _currentMenu = item.subMenu!;
         _selectedSectionIndex = 0;
         _selectedItemIndex = -1;
       });
+    } else if (item.onTap != null) {
+      widget.onMenuItemSelected(item);
+      item.onTap?.call();
+    } else if (item.subMenu != null && item.subMenu!.isEmpty) {
+      showCustomSnackBar(
+          context: context,
+          message: "Not authorized to access this menu",
+          type: SnackBarType.alert);
     } else {
-      widget.onMenuItemSelected(menuItem);
-      if (menuItem.onTap != null) {
-        menuItem.onTap!();
-      }
+      widget.onMenuItemSelected(item);
     }
   }
 
@@ -211,11 +326,20 @@ class _DynamicMenuState extends State<DynamicMenu> {
     }
   }
 
-  // ignore: deprecated_member_use
-  void _handleKeyEvent(RawKeyEvent event) {
-    // ignore: deprecated_member_use
-    if (event is RawKeyDownEvent) {
-      final key = event.logicalKey.keyLabel.toUpperCase();
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      String key = event.logicalKey.keyLabel.toUpperCase();
+
+      if (event.logicalKey.keyId >= LogicalKeyboardKey.numpad0.keyId &&
+          event.logicalKey.keyId <= LogicalKeyboardKey.numpad9.keyId) {
+        key = String.fromCharCode(
+          '0'.codeUnitAt(0) +
+              (event.logicalKey.keyId - LogicalKeyboardKey.numpad0.keyId),
+        );
+      }
+
+      final bool isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
+          event.logicalKey == LogicalKeyboardKey.numpadEnter;
 
       if (key == 'ARROW_UP') {
         setState(() {
@@ -227,7 +351,7 @@ class _DynamicMenuState extends State<DynamicMenu> {
           _selectedItemIndex = (_selectedItemIndex + 1) %
               _currentMenu[_selectedSectionIndex].items.length;
         });
-      } else if (key == 'ENTER' && _selectedItemIndex != -1) {
+      } else if (isEnter && _selectedItemIndex != -1) {
         _navigateToSubMenu(
             _currentMenu[_selectedSectionIndex].items[_selectedItemIndex]);
       } else if (key == 'ESCAPE') {
@@ -248,13 +372,12 @@ class _DynamicMenuState extends State<DynamicMenu> {
           }
         }
       }
-      // Handle custom shortcuts
       for (final entry in widget.shortcuts.entries) {
-        final key = entry.key;
+        final skey = entry.key;
         final callback = entry.value;
 
-        if (event.logicalKey == key) {
-          callback(); // Invoke the callback for the matching shortcut
+        if (event.logicalKey == skey) {
+          callback();
         }
       }
     }
@@ -262,96 +385,89 @@ class _DynamicMenuState extends State<DynamicMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textTh = theme.textTheme;
+    final chipTh = ChipTheme.of(context);
+
+    Color resolve(Color? override, Color def) => override ?? def;
+
+    final bgColor = resolve(widget.backgroundColor, cs.surface);
+    final sectionColor = resolve(
+        widget.sectionTitleColor, textTh.titleMedium?.color ?? Colors.black);
+    final backIcon = resolve(widget.backButtonColor, cs.onSurface);
+    final backTxt = resolve(widget.backButtonTextColor, cs.onSurface);
+    final btnBg = resolve(
+        widget.buttonBackgroundColor, chipTh.backgroundColor ?? Colors.white);
+    final btnSelBg = resolve(
+        widget.buttonSelectedBackgroundColor, cs.primary.withOpacity(0.1));
+    final btnBorder = widget.buttonBorderColor ?? const Color(0xffE1E1E1);
+    final btnSelBorder = resolve(widget.buttonSelectedBorderColor, cs.primary);
+    final scBg =
+        resolve(widget.shortcutBackgroundColor, const Color(0xFF4A6CEE));
+    final scSelBg =
+        resolve(widget.shortcutSelectedBackgroundColor, cs.secondaryContainer);
+    final scTxt = resolve(widget.shortcutTextColor, cs.onSecondary);
+    final btnTxt = resolve(
+        widget.buttonTextColor, textTh.bodyMedium?.color ?? Colors.black);
+    final btnSelTxt = resolve(widget.buttonSelectedTextColor, cs.primary);
+
+    return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
-      onKey: _handleKeyEvent,
+      onKeyEvent: _handleKeyEvent,
       child: Container(
-        color: widget.backgroundColor, 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        decoration: BoxDecoration(
+          color: bgColor,
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.1),
+              offset: Offset(-2, 0),
+              blurRadius: 15,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            if (widget.showAppBar)
-              Container(
-                height: 50,
-                color: widget.appBarColor,
-                alignment: Alignment.center,
-                child: Text(
-                  widget.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: widget.appBarTextColor,
+            if (_menuStack.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _navigateBack,
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: backIcon,
+                      size: 20,
+                    ),
+                    label: Text('Back', style: TextStyle(color: backTxt)),
                   ),
                 ),
               ),
-            if (_menuStack.isNotEmpty)
-              TextButton.icon(
-                onPressed: _navigateBack,
-                icon: Icon(Icons.arrow_back, color: widget.backButtonColor),
-                label: Text(
-                  'Back',
-                  style: TextStyle(color: widget.backButtonTextColor),
-                ),
+            for (final section in _currentMenu) ...[
+              MenuSectionWidget(
+                section: section,
+                onPressed: _navigateToSubMenu,
+                selectedSectionIndex: _selectedSectionIndex,
+                selectedItemIndex: _selectedItemIndex,
+                currentMenu: _currentMenu,
+                sectionColor: sectionColor,
+                btnBg: btnBg,
+                btnSelBg: btnSelBg,
+                btnBorder: btnBorder,
+                btnSelBorder: btnSelBorder,
+                scBg: scBg,
+                scSelBg: scSelBg,
+                scTxt: scTxt,
+                btnTxt: btnTxt,
+                btnSelTxt: btnSelTxt,
               ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _currentMenu.map((section) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8.0,
-                            horizontal: 16.0,
-                          ),
-                          child: Text(
-                            section.title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: widget.sectionTitleColor,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children:
-                                section.items.asMap().entries.map((entry) {
-                              final itemIndex = entry.key;
-                              final item = entry.value;
-                              return CustomButton(
-                                shortcut: item.shortcut,
-                                label: item.label,
-                                isSelected: _selectedSectionIndex ==
-                                        _currentMenu.indexOf(section) &&
-                                    itemIndex == _selectedItemIndex,
-                                onPressed: () => _navigateToSubMenu(item),
-                                backgroundColor: widget.buttonBackgroundColor,
-                                selectedBackgroundColor: widget.buttonSelectedBackgroundColor,
-                                borderColor: widget.buttonBorderColor,
-                                selectedBorderColor: widget.buttonSelectedBorderColor,
-                                shortcutBackgroundColor: widget.shortcutBackgroundColor,
-                                selectedShortcutBackgroundColor: widget.shortcutSelectedBackgroundColor,
-                                shortcutTextColor: widget.shortcutTextColor,
-                                textColor: widget.buttonTextColor,
-                                selectedTextColor: widget.buttonSelectedTextColor,
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
+              const SizedBox(height: 16),
+            ],
           ],
         ),
       ),
@@ -360,9 +476,128 @@ class _DynamicMenuState extends State<DynamicMenu> {
 
   @override
   void dispose() {
-    _escKeyTimer?.cancel();
     _focusNode.dispose();
     super.dispose();
+  }
+}
+
+class MenuSectionWidget extends StatefulWidget {
+  final MenuSection section;
+  final int selectedSectionIndex;
+  final int selectedItemIndex;
+  final List<MenuSection> currentMenu;
+  final Color sectionColor;
+  final Color btnBg;
+  final Color btnSelBg;
+  final Color btnBorder;
+  final Color btnSelBorder;
+  final Color scBg;
+  final Color scSelBg;
+  final Color scTxt;
+  final Color btnTxt;
+  final Color btnSelTxt;
+  final void Function(MenuItem item) onPressed;
+
+  const MenuSectionWidget({
+    super.key,
+    required this.section,
+    required this.selectedSectionIndex,
+    required this.selectedItemIndex,
+    required this.currentMenu,
+    required this.sectionColor,
+    required this.btnBg,
+    required this.btnSelBg,
+    required this.btnBorder,
+    required this.btnSelBorder,
+    required this.scBg,
+    required this.scSelBg,
+    required this.scTxt,
+    required this.btnTxt,
+    required this.btnSelTxt,
+    required this.onPressed,
+  });
+
+  @override
+  State<MenuSectionWidget> createState() => _MenuSectionWidgetState();
+}
+
+class _MenuSectionWidgetState extends State<MenuSectionWidget> {
+  int _hoveredItemIndex = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrentSection = widget.currentMenu.indexOf(widget.section) ==
+        widget.selectedSectionIndex;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
+      decoration: BoxDecoration(
+        color: const Color(0xffF5F5F5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.section.title,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: widget.sectionColor,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 16,
+              mainAxisExtent: 50,
+            ),
+            itemCount: widget.section.items.length,
+            itemBuilder: (context, idx) {
+              final item = widget.section.items[idx];
+              final isSelected =
+                  isCurrentSection && idx == widget.selectedItemIndex;
+
+              final shouldShowHoverShadow =
+                  _hoveredItemIndex != -1 && idx == _hoveredItemIndex + 2;
+
+              return MouseRegion(
+                onEnter: (_) {
+                  if (_hoveredItemIndex != idx) {
+                    setState(() => _hoveredItemIndex = idx);
+                  }
+                },
+                onExit: (_) {
+                  if (_hoveredItemIndex != -1) {
+                    setState(() => _hoveredItemIndex = -1);
+                  }
+                },
+                child: CustomChip(
+                  shortcut: item.shortcut,
+                  label: item.label,
+                  isSelected: isSelected,
+                  onPressed: () => widget.onPressed(item),
+                  backgroundColor: widget.btnBg,
+                  selectedBackgroundColor: widget.btnSelBg,
+                  borderColor: widget.btnBorder,
+                  selectedBorderColor: widget.btnSelBorder,
+                  shortcutBackgroundColor: widget.scBg,
+                  selectedShortcutBackgroundColor: widget.scSelBg,
+                  shortcutTextColor: widget.scTxt,
+                  textColor: widget.btnTxt,
+                  selectedTextColor: widget.btnSelTxt,
+                  forceHoverShadow: shouldShowHoverShadow,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -386,8 +621,8 @@ class _EscListenerPageState extends State<EscListenerPage> {
   Timer? _escKeyTimer;
   bool _isFirstEscPress = false;
 
-  void _handleKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent) {
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
       final key = event.logicalKey.keyLabel.toUpperCase();
 
       if (key == 'ESCAPE') {
@@ -415,10 +650,10 @@ class _EscListenerPageState extends State<EscListenerPage> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
+    return KeyboardListener(
       focusNode: FocusNode(),
       autofocus: true,
-      onKey: _handleKeyEvent,
+      onKeyEvent: _handleKeyEvent,
       child: widget.child,
     );
   }
