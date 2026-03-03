@@ -230,6 +230,7 @@ class DynamicMenu extends StatefulWidget {
   final String title;
   final Map<LogicalKeyboardKey, VoidCallback> shortcuts;
   final bool showAppBar;
+  final FocusNode? focusNode;
 
   final Color? backgroundColor;
   final Color? appBarColor;
@@ -269,6 +270,7 @@ class DynamicMenu extends StatefulWidget {
     this.shortcutTextColor,
     this.buttonTextColor,
     this.buttonSelectedTextColor,
+    this.focusNode,
   });
 
   @override
@@ -276,7 +278,7 @@ class DynamicMenu extends StatefulWidget {
 }
 
 class _DynamicMenuState extends State<DynamicMenu> {
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode;
   final List<List<MenuSection>> _menuStack = [];
   late List<MenuSection> _currentMenu;
   int _selectedSectionIndex = 0;
@@ -285,6 +287,7 @@ class _DynamicMenuState extends State<DynamicMenu> {
   @override
   void initState() {
     super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
     _currentMenu = widget.menuData;
   }
 
@@ -476,7 +479,9 @@ class _DynamicMenuState extends State<DynamicMenu> {
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 }
